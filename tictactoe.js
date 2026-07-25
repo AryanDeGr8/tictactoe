@@ -5,38 +5,49 @@ let game = {
   hasStarted: false,
   playerTurn: 0,
   turns: 0,
+  board: [
+    [null, null, null],
+    [null, null, null],
+    [null, null, null],
+  ],
 };
 
 let boardSquaresArray = document.querySelectorAll(".boardSquare");
 let boardArray = array2Dfy(boardSquaresArray, 3);
 
-boardSquaresArray.forEach(function (element) {
-  element.addEventListener("click", function () {
-    oneTimeBoardClickFunction(game, element);
-    updateTurnText(game);
-  });
-});
+function addListenersToGame() {
+  for (let i = 0; i < boardSquaresArray.length; i++) {
+    boardSquaresArray[i].addEventListener("click", function (event) {
+      event.stopPropagation();
+      oneTimeBoardClickFunction(game, i);
+
+      updateTurnText(game);
+      console.log([Math.floor(i / 3), i % 3]);
+      renderBoard(game);
+    });
+  }
+}
 
 let onesTurn = document.getElementById("onesTurn");
 let twosTurn = document.getElementById("twosTurn");
 let board = document.getElementById("board");
 let startText = document.getElementById("startText");
 
-document.addEventListener("keydown", function (event) {
+document.addEventListener("click", function (event) {
   startGame(game, event, boardSquaresArray);
 });
 
-function checkIfGameHasBeenWon(boardArray, game) {
+function checkIfGameHasBeenWon(game) {
   let scoreCounts = {
     X: 0,
     O: 0,
   };
   // for rows
-  for (let i = 0; i < boardArray.length; i++) {
-    for (let j = 0; j < boardArray[0].length; j++) {
-      if (boardArray[i][j].textContent === "X") {
+  for (let i = 0; i < game.board.length; i++) {
+    for (let j = 0; j < game.board[0].length; j++) {
+      if (game.board[i][j] === "X") {
         scoreCounts.X++;
-      } else if (boardArray[i][j].textContent === "O") {
+      } else if (game.board[i][j] === "O") {
         scoreCounts.O++;
       }
     }
@@ -53,11 +64,11 @@ function checkIfGameHasBeenWon(boardArray, game) {
 
   // for columns
 
-  for (let j = 0; j < boardArray[0].length; j++) {
-    for (let i = 0; i < boardArray.length; i++) {
-      if (boardArray[i][j].textContent === "X") {
+  for (let j = 0; j < game.board[0].length; j++) {
+    for (let i = 0; i < game.board.length; i++) {
+      if (game.board[i][j] === "X") {
         scoreCounts.X++;
-      } else if (boardArray[i][j].textContent === "O") {
+      } else if (game.board[i][j] === "O") {
         scoreCounts.O++;
       }
     }
@@ -73,10 +84,10 @@ function checkIfGameHasBeenWon(boardArray, game) {
   }
 
   // for diagonals
-  for (let i = 0; i < boardArray.length; i++) {
-    if (boardArray[i][i].textContent === "X") {
+  for (let i = 0; i < game.board.length; i++) {
+    if (game.board[i][i] === "X") {
       scoreCounts.X++;
-    } else if (boardArray[i][i].textContent === "O") {
+    } else if (game.board[i][i] === "O") {
       scoreCounts.O++;
     }
   }
@@ -90,10 +101,10 @@ function checkIfGameHasBeenWon(boardArray, game) {
     scoreCounts.O = 0;
   }
 
-  for (let i = 0; i < boardArray.length; i++) {
-    if (boardArray[i][boardArray.length - i - 1].textContent === "X") {
+  for (let i = 0; i < game.board.length; i++) {
+    if (game.board[i][game.board.length - i - 1] === "X") {
       scoreCounts.X++;
-    } else if (boardArray[i][boardArray.length - i - 1].textContent === "O") {
+    } else if (game.board[i][game.board.length - i - 1] === "O") {
       scoreCounts.O++;
     }
   }
@@ -110,22 +121,26 @@ function checkIfGameHasBeenWon(boardArray, game) {
   return false;
 }
 
-function oneTimeBoardClickFunction(game, element) {
-  if (element.textContent === "") {
-    element.textContent = crossOrOval(game);
+function oneTimeBoardClickFunction(game, currentClickedSquare) {
+  let i = Math.floor(currentClickedSquare / 3);
+  let j = currentClickedSquare % 3;
+  if (game.board[i][j] === null) {
+    game.board[i][j] = crossOrOval(game);
     game.turns++;
 
-    if (!checkIfGameHasBeenWon(boardArray, game) && game.turns === 9) {
+    if (!checkIfGameHasBeenWon(game) && game.turns === 9) {
+      startText.textContent = "It's a Tie! Tap to Restart";
+
       endGame(game);
 
       return;
-    } else if (checkIfGameHasBeenWon(boardArray, game)) {
-      switch (checkIfGameHasBeenWon(boardArray, game)) {
+    } else if (checkIfGameHasBeenWon(game)) {
+      switch (checkIfGameHasBeenWon(game)) {
         case 1:
-          startText.textContent = "Player 1 Won! Press Space to Restart";
+          startText.textContent = "Player 1 Won! Tap to Restart";
           break;
         case 2:
-          startText.textContent = "Player 2 Won! Press Space to Restart";
+          startText.textContent = "Player 2 Won! Tap to Restart";
           break;
       }
       endGame(game);
@@ -186,14 +201,19 @@ function array2Dfy(array, n) {
 }
 
 function startGame(game, event, boardSquaresArray) {
-  if (event.key === " " && !game.hasStarted) {
+  if (!game.hasStarted) {
     game.hasStarted = true;
     game.hasBeenWon = false;
     game.playerTurn = 0;
     game.turns = 0;
+    game.board = [
+      [null, null, null],
+      [null, null, null],
+      [null, null, null],
+    ];
 
     boardSquaresArray.forEach(function (element) {
-      element.textContent = "";
+      element.innerHTML = "";
     });
 
     updateTurnText(game);
@@ -215,3 +235,25 @@ function endGame(game) {
   game.hasStarted = false;
   updateTurnText(game);
 }
+
+function renderBoard(game) {
+  let i = 0;
+  game.board.forEach(function (element) {
+    element.forEach(function (element) {
+      boardSquaresArray[i].innerHTML = "";
+
+      if (element === "X") {
+        let img = document.createElement("img");
+        img.setAttribute("src", "img/cross.svg");
+        boardSquaresArray[i].appendChild(img);
+      } else if (element === "O") {
+        let img = document.createElement("img");
+        img.setAttribute("src", "img/circle.svg");
+        boardSquaresArray[i].appendChild(img);
+      }
+      i++;
+    });
+  });
+}
+
+addListenersToGame();
